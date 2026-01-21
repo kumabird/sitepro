@@ -1,6 +1,5 @@
 import express from "express";
 import fetch from "node-fetch";
-import cheerio from "cheerio";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,6 +25,7 @@ app.get("/search", async (req, res) => {
   const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
   const html = await fetch(url).then(r => r.text());
 
+  // HTML から videoId を抽出
   const videoIds = [...html.matchAll(/"videoId":"(.*?)"/g)].map(m => m[1]);
   const unique = [...new Set(videoIds)].slice(0, 20);
 
