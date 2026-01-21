@@ -1,64 +1,105 @@
 import express from "express";
 import fetch from "node-fetch";
+import cheerio from "cheerio";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// YouTube の動画IDを抽出
-function extractVideoId(url) {
-  const match = url.match(/v=([^&]+)/);
-  if (match) return match[1];
+app.use(express.urlencoded({ extended: true }));
 
-  // youtu.be/xxxx
-  const short = url.match(/youtu\.be\/([^?]+)/);
-  if (short) return short[1];
-
-  return null;
-}
-
+// ホーム（検索フォーム）
 app.get("/", (req, res) => {
   res.send(`
-    <h2>YouTube 軽量プロキシ</h2>
-    <form action="/watch">
-      <input type="text" name="v" placeholder="動画IDを入力">
-      <button type="submit">再生</button>
+    <h2>YouTube Viewer（API不要）</h2>
+    <form action="/search">
+      <input type="text" name="q" placeholder="検索ワードを入力" style="width:300px;">
+      <button type="submit">検索</button>
     </form>
   `);
 });
 
-// watch?v=xxxx に対応
-app.get("/watch", async (req, res) => {
-  const videoId = req.query.v;
-  if (!videoId) return res.send("動画IDがありません");
+// 検索結果（HTML解析）
+app.get("/search", async (req, res) => {
+  const q = req.query.q;
+  if (!q) return res.send("検索ワードがありません");
 
-  const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+  const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+  const html = await fetch(url).then(r => r.text());
 
-  try {
-    const response = await fetch(embedUrl, {
-      headers: { "User-Agent": req.headers["user-agent"] }
-    });
+  const videoIds = [...html.matchAll(/"videoId":"(.*?)"/g)].map(m => m[1]);
+  const unique = [...new Set(videoIds)].slice(0, 20);
 
-    const html = await response.text();
-    res.set("Content-Type", "text/html");
-    res.send(html);
+  let list = unique.map(id => `
+    <div style="margin-bottom:20px;">
+      <a href="/watch?v=${id}">
+        <img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" width="200"><br>
+        動画ID: ${id}
+      </a>
+    </div>
+  `).join("");
 
-  } catch (err) {
-    res.send("読み込みエラー: " + err.message);
-  }
+  res.send(`
+    <h2>検索結果: ${q}</h2>
+    ${list}
+    <a href="/">戻る</a>
+  `);
 });
 
-// 通常の YouTube URL をプロキシ
-app.get("/proxy", (req, res) => {
-  const url = req.query.url;
-  if (!url) return res.send("URL がありません");
+// 動画再生（埋め込み）
+app.get("/watch", (req, res) => {
+  const id = req.query.v;
+  if (!id) return res.send("動画IDがありません");
 
-  const id = extractVideoId(url);
-  if (!id) return res.send("動画IDが見つかりません");
-
-  res.redirect(`/watch?v=${id}`);
+  res.send(`
+    <h2>動画再生</h2>
+    <iframe width="560" height="315"
+      src="https://www.youtube.com/embed/${id}"
+      frameborder="0" allowfullscreen></iframe>
+    <br><br>
+    <a href="/">ホーム</a>
+  `);
 });
 
-app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
+// Shorts 再生（埋め込み）
+app.get("/shorts", (req, res) => {
+  const id = req.query.v;
+  if (!id) return res.send("Shorts ID がありません");
+
+  res.send(`
+    <h2>Shorts 再生</h2>
+    <iframe width="315" height="560"
+      src="https://www.youtube.com/embed/${id}"
+      frameborder="0" allowfullscreen></iframe>
+    <br><br>
+    <a href="/">ホーム</a>
+  `);
 });
 
+// チャンネル動画一覧（HTML解析）
+app.get("/channel", async (req, res) => {
+  const id = req.query.id;
+  if (!id) return res.send("チャンネルIDがありません");
+
+  const url = `https://www.youtube.com/channel/${id}/videos`;
+  const html = await fetch(url).then(r => r.text());
+
+  const videoIds = [...html.matchAll(/"videoId":"(.*?)"/g)].map(m => m[1]);
+  const unique = [...new Set(videoIds)].slice(0, 30);
+
+  let list = unique.map(id => `
+    <div style="margin-bottom:20px;">
+      <a href="/watch?v=${id}">
+        <img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" width="200"><br>
+        動画ID: ${id}
+      </a>
+    </div>
+  `).join("");
+
+  res.send(`
+    <h2>チャンネル動画一覧</h2>
+    ${list}
+    <a href="/">戻る</a>
+  `);
+});
+
+app.listen(PORT, () => console.log("Server running"));
