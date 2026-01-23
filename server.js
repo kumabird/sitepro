@@ -104,7 +104,7 @@ app.get("/channel", async (req, res) => {
 
 /gs)];
 
-  const videos = matches.slice(0, 40).map(m => ({
+  const videos = matches.slice(0, 42).map(m => ({
     id: m[1],
     title: m[2]
   }));
