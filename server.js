@@ -26,7 +26,7 @@ app.get("/search", async (req, res) => {
   const html = await fetch(url).then(r => r.text());
 
   // ★ 正規表現は必ず1行で書く（改行禁止）
-  const matches = [...html.matchAll(/"videoId":"(.*?)".*?"title":\{"runs":
+  const matches = [...html.matchAll(/"videoId":"(.*?)".*?"title":\{"runs":\[\{"text":"(.*?)"\}\]/gs)];
 
 \[\{"text":"(.*?)"\}\]
 
