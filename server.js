@@ -27,9 +27,7 @@ app.get("/search", async (req, res) => {
 
   // ★ 正規表現は必ず1行で書く
   const matches = [...html.matchAll(/"videoId":"(.*?)".*?"title":\{"runs":
-
 \[\{"text":"(.*?)"\}\]
-
 /gs)];
 
   const videos = matches.slice(0, 42).map(m => ({
@@ -100,9 +98,7 @@ app.get("/channel", async (req, res) => {
 
   // ★ ここも必ず1行で書く
   const matches = [...html.matchAll(/"videoId":"(.*?)".*?"title":\{"runs":
-
 \[\{"text":"(.*?)"\}\]
-
 /gs)];
 
   const videos = matches.slice(0, 42).map(m => ({
