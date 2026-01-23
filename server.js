@@ -25,8 +25,8 @@ app.get("/search", async (req, res) => {
   const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
   const html = await fetch(url).then(r => r.text());
 
-  // ★ 正規表現は必ず1行で書く（改行禁止）
-  const matches = [...html.matchAll(/"videoId":"(.*?)".*?"title":\{"runs":\[\{"text":"(.*?)"\}\]/gs)];
+  // ★ 正規表現は必ず1行で書く
+  const matches = [...html.matchAll(/"videoId":"(.*?)".*?"title":\{"runs":
 
 \[\{"text":"(.*?)"\}\]
 
