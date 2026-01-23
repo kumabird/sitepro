@@ -25,14 +25,14 @@ app.get("/search", async (req, res) => {
   const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
   const html = await fetch(url).then(r => r.text());
 
-  // 動画IDとタイトルを抽出
+  // ★ 正規表現は必ず1行で書く（改行禁止）
   const matches = [...html.matchAll(/"videoId":"(.*?)".*?"title":\{"runs":
 
 \[\{"text":"(.*?)"\}\]
 
 /gs)];
 
-  const videos = matches.slice(0, 40).map(m => ({
+  const videos = matches.slice(0, 42).map(m => ({
     id: m[1],
     title: m[2]
   }));
@@ -98,6 +98,7 @@ app.get("/channel", async (req, res) => {
   const url = `https://www.youtube.com/channel/${id}/videos`;
   const html = await fetch(url).then(r => r.text());
 
+  // ★ ここも必ず1行で書く
   const matches = [...html.matchAll(/"videoId":"(.*?)".*?"title":\{"runs":
 
 \[\{"text":"(.*?)"\}\]
