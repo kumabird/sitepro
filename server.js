@@ -25,24 +25,39 @@ app.get("/search", async (req, res) => {
   const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
   const html = await fetch(url).then(r => r.text());
 
-  // HTML から videoId を抽出
-  const videoIds = [...html.matchAll(/"videoId":"(.*?)"/g)].map(m => m[1]);
-  const unique = [...new Set(videoIds)].slice(0, 20);
+  // 動画IDとタイトルを抽出
+  const matches = [...html.matchAll(/"videoId":"(.*?)".*?"title":\{"runs":
 
-  let list = unique.map(id => `
-    <div style="margin-bottom:20px;">
-      <a href="/watch?v=${id}">
-        <img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" width="200"><br>
-        動画ID: ${id}
+\[\{"text":"(.*?)"\}\]
+
+/gs)];
+
+  const videos = matches.slice(0, 40).map(m => ({
+    id: m[1],
+    title: m[2]
+  }));
+
+  let list = `
+    <h2>検索結果: ${q}</h2>
+    <div style="
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    ">
+  `;
+
+  list += videos.map(v => `
+    <div>
+      <a href="/watch?v=${v.id}">
+        <img src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" style="width:100%; border-radius:8px;">
+        <div style="margin-top:5px; font-weight:bold;">${v.title}</div>
       </a>
     </div>
   `).join("");
 
-  res.send(`
-    <h2>検索結果: ${q}</h2>
-    ${list}
-    <a href="/">戻る</a>
-  `);
+  list += "</div><br><a href='/'>戻る</a>";
+
+  res.send(list);
 });
 
 // 動画再生（埋め込み）
@@ -83,23 +98,38 @@ app.get("/channel", async (req, res) => {
   const url = `https://www.youtube.com/channel/${id}/videos`;
   const html = await fetch(url).then(r => r.text());
 
-  const videoIds = [...html.matchAll(/"videoId":"(.*?)"/g)].map(m => m[1]);
-  const unique = [...new Set(videoIds)].slice(0, 30);
+  const matches = [...html.matchAll(/"videoId":"(.*?)".*?"title":\{"runs":
 
-  let list = unique.map(id => `
-    <div style="margin-bottom:20px;">
-      <a href="/watch?v=${id}">
-        <img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" width="200"><br>
-        動画ID: ${id}
+\[\{"text":"(.*?)"\}\]
+
+/gs)];
+
+  const videos = matches.slice(0, 40).map(m => ({
+    id: m[1],
+    title: m[2]
+  }));
+
+  let list = `
+    <h2>チャンネル動画一覧</h2>
+    <div style="
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    ">
+  `;
+
+  list += videos.map(v => `
+    <div>
+      <a href="/watch?v=${v.id}">
+        <img src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" style="width:100%; border-radius:8px;">
+        <div style="margin-top:5px; font-weight:bold;">${v.title}</div>
       </a>
     </div>
   `).join("");
 
-  res.send(`
-    <h2>チャンネル動画一覧</h2>
-    ${list}
-    <a href="/">戻る</a>
-  `);
+  list += "</div><br><a href='/'>戻る</a>";
+
+  res.send(list);
 });
 
 app.listen(PORT, () => console.log("Server running"));
