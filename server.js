@@ -1,8 +1,9 @@
-app.disable("x-powered-by");
 import express from "express";
 import fetch from "node-fetch";
 
 const app = express();
+app.disable("x-powered-by");
+
 const PORT = process.env.PORT || 3000;
 
 app.use(express.urlencoded({ extended: true }));
