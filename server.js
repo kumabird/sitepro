@@ -1,3 +1,4 @@
+app.disable("x-powered-by");
 import express from "express";
 import fetch from "node-fetch";
 
