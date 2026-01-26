@@ -1,6 +1,4 @@
 import express from "express";
-import fetch from "node-fetch";
-
 const app = express();
 app.disable("x-powered-by");
 
@@ -11,32 +9,26 @@ app.use(express.urlencoded({ extended: true }));
 // ホーム（検索フォーム）
 app.get("/", (req, res) => {
   res.send(`
-    <h2>YouTube Viewer（API不要）</h2>
+    <h2>YouTube Viewer</h2>
     <form action="/search">
-      <input type="text" name="q" placeholder="検索ワードを入力" style="width:300px;">
+      <input type="text" name="q" placeholder="きのこを崇めよ" style="width:300px;">
       <button type="submit">検索</button>
     </form>
   `);
 });
 
-// 検索結果（HTML解析）
-app.get("/search", async (req, res) => {
-  const q = req.query.q;
-  if (!q) return res.send("検索ワードがありません");
+// 検索結果（ドッキリ版）
+app.get("/search", (req, res) => {
+  const q = req.query.q || "しいたけ";
 
-  const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
-  const html = await fetch(url).then(r => r.text());
-
-  // ★ 正規表現は必ず1行で書く（改行禁止）
-  const matches = [...html.matchAll(/"videoId":"(.*?)".*?"title":\{"runs":\[\{"text":"(.*?)"\}\]/gs)];
-
-  const videos = matches.slice(0, 42).map(m => ({
-    id: m[1],
-    title: m[2]
-  }));
+  const videos = Array(9).fill({
+    id: "dQw4w9WgXcQ", // ドッキリ用の動画ID
+    title: "松川しばく"
+  });
 
   let list = `
     <h2>検索結果: ${q}</h2>
+    <p>これは運命です。あなたは猿よりも頭が悪いです。あと猿に失礼です</p>
     <div style="
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -58,22 +50,23 @@ app.get("/search", async (req, res) => {
   res.send(list);
 });
 
-// 動画再生（埋め込み）
+// 動画再生（埋め込み＋ドッキリメッセージ）
 app.get("/watch", (req, res) => {
   const id = req.query.v;
   if (!id) return res.send("動画IDがありません");
 
   res.send(`
     <h2>動画再生</h2>
+    <p style="color:red; font-weight:bold;">松川が来たらすぐに逃げましょう</p>
     <iframe width="560" height="315"
-      src="https://www.youtube.com/embed/${id}"
+      src="https://www.youtube.com/embed/${id}?autoplay=1"
       frameborder="0" allowfullscreen></iframe>
     <br><br>
     <a href="/">ホーム</a>
   `);
 });
 
-// Shorts 再生（埋め込み）
+// Shorts 再生（そのまま）
 app.get("/shorts", (req, res) => {
   const id = req.query.v;
   if (!id) return res.send("Shorts ID がありません");
@@ -88,24 +81,18 @@ app.get("/shorts", (req, res) => {
   `);
 });
 
-// チャンネル動画一覧（HTML解析）
-app.get("/channel", async (req, res) => {
+// チャンネル動画一覧（ドッキリ化）
+app.get("/channel", (req, res) => {
   const id = req.query.id;
   if (!id) return res.send("チャンネルIDがありません");
 
-  const url = `https://www.youtube.com/channel/${id}/videos`;
-  const html = await fetch(url).then(r => r.text());
-
-  // ★ ここも必ず1行で書く
-  const matches = [...html.matchAll(/"videoId":"(.*?)".*?"title":\{"runs":\[\{"text":"(.*?)"\}\]/gs)];
-
-  const videos = matches.slice(0, 42).map(m => ({
-    id: m[1],
-    title: m[2]
-  }));
+  const videos = Array(9).fill({
+    id: "dQw4w9WgXcQ",
+    title: "Matukawa'hed is lonely"
+  });
 
   let list = `
-    <h2>チャンネル動画一覧</h2>
+    <h2>チャンネル動画一覧（ID: ${id}）</h2>
     <div style="
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -127,4 +114,4 @@ app.get("/channel", async (req, res) => {
   res.send(list);
 });
 
-app.listen(PORT, () => console.log("Server running"));
+app.listen(PORT, () => console.log("こんなところに野生の松川が!"));
