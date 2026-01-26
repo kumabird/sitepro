@@ -19,7 +19,7 @@ app.get("/", (req, res) => {
 
 // 検索結果（ドッキリ版）
 app.get("/search", (req, res) => {
-  const q = req.query.q || "縺雁燕縺ｯ諢壹°閠";
+  const q = req.query.q || "you are like a monkey";
 
   const videos = Array(9).fill({
     id: "dQw4w9WgXcQ", // ドッキリ用の動画ID
