@@ -11,7 +11,7 @@ app.get("/", (req, res) => {
   res.send(`
     <h2>YouTube Viewer</h2>
     <form action="/search">
-      <input type="text" name="q" placeholder="きのこを崇めよ" style="width:300px;">
+      <input type="text" name="q" placeholder="譚ｾ蟾昴?豁ｻ縺ｬ縺ｹ縺阪□" style="width:300px;">
       <button type="submit">検索</button>
     </form>
   `);
@@ -19,7 +19,7 @@ app.get("/", (req, res) => {
 
 // 検索結果（ドッキリ版）
 app.get("/search", (req, res) => {
-  const q = req.query.q || "しいたけ";
+  const q = req.query.q || "縺雁燕縺ｯ諢壹°閠";
 
   const videos = Array(9).fill({
     id: "dQw4w9WgXcQ", // ドッキリ用の動画ID
