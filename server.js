@@ -2,72 +2,152 @@ import express from "express";
 import fetch from "node-fetch";
 
 const app = express();
+app.disable("x-powered-by");
+
 const PORT = process.env.PORT || 3000;
+const PASSCODE = "157514";
 
-// YouTube 以外禁止
-function isYouTube(url) {
-  return (
-    url.includes("youtube.com") ||
-    url.includes("youtu.be")
-  );
-}
+app.use(express.urlencoded({ extended: true }));
 
-// 同意画面スキップ（地域パラメータ削除）
-function cleanYouTubeURL(url) {
-  if (url.includes("gl=") || url.includes("hl=")) {
-    return "https://www.youtube.com/";
-  }
-  return url;
-}
-
+// パスコード入力ページ
 app.get("/", (req, res) => {
-  res.redirect("/proxy?url=https://www.youtube.com");
+  res.send(`
+    <h2>パスコードを入力してください</h2>
+    <form action="/home" method="POST">
+      <input type="password" name="code" placeholder="パスコード" required>
+      <button type="submit">送信</button>
+    </form>
+  `);
 });
 
-app.get("/proxy", async (req, res) => {
-  let url = req.query.url;
-  if (!url) return res.send("URL が指定されていません");
-
-  if (!isYouTube(url)) {
-    return res.send("このプロキシでは YouTube のみ利用できます");
+// パスコード認証 → ホーム画面へ
+app.post("/home", (req, res) => {
+  const code = req.body.code;
+  if (code !== PASSCODE) {
+    return res.send("<h3>パスコードが違います</h3><a href='/'>戻る</a>");
   }
 
-  url = cleanYouTubeURL(url);
-
-  try {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": req.headers["user-agent"]
-      }
-    });
-
-    const contentType = response.headers.get("content-type");
-    res.set("Content-Type", contentType);
-
-    const body = await response.text();
-
-    // リンク書き換え
-    const rewritten = body
-      .replace(/href="([^"]+)"/g, (m, p1) => {
-        if (p1.startsWith("http")) {
-          return `href="/proxy?url=${encodeURIComponent(p1)}"`;
-        }
-        return m;
-      })
-      .replace(/src="([^"]+)"/g, (m, p1) => {
-        if (p1.startsWith("http")) {
-          return `src="/proxy?url=${encodeURIComponent(p1)}"`;
-        }
-        return m;
-      });
-
-    res.send(rewritten);
-
-  } catch (err) {
-    res.send("読み込みエラー: " + err.message);
-  }
+  res.send(`
+    <h2>YouTube Viewer（API不要）</h2>
+    <form action="/search">
+      <input type="text" name="q" placeholder="検索ワードを入力" style="width:300px;">
+      <button type="submit">検索</button>
+    </form>
+  `);
 });
 
-app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
+// 検索結果
+app.get("/search", async (req, res) => {
+  const q = req.query.q;
+  if (!q) return res.send("検索ワードがありません");
+
+  const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+  const html = await fetch(url).then(r => r.text());
+
+  const matches = [...html.matchAll(/"videoId":"(.*?)".*?"title":\{"runs":
+
+\[\{"text":"(.*?)"\}\]
+
+/gs)];
+
+  const videos = matches.slice(0, 42).map(m => ({
+    id: m[1],
+    title: m[2]
+  }));
+
+  let list = `
+    <h2>検索結果: ${q}</h2>
+    <div style="
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    ">
+  `;
+
+  list += videos.map(v => `
+    <div>
+      <a href="/watch?v=${v.id}">
+        <img src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" style="width:100%; border-radius:8px;">
+        <div style="margin-top:5px; font-weight:bold;">${v.title}</div>
+      </a>
+    </div>
+  `).join("");
+
+  list += "</div><br><a href='/home'>戻る</a>";
+
+  res.send(list);
 });
+
+// 動画再生
+app.get("/watch", (req, res) => {
+  const id = req.query.v;
+  if (!id) return res.send("動画IDがありません");
+
+  res.send(`
+    <h2>動画再生</h2>
+    <iframe width="560" height="315"
+      src="https://www.youtube.com/embed/${id}"
+      frameborder="0" allowfullscreen></iframe>
+    <br><br>
+    <a href="/home">ホーム</a>
+  `);
+});
+
+// Shorts再生
+app.get("/shorts", (req, res) => {
+  const id = req.query.v;
+  if (!id) return res.send("Shorts ID がありません");
+
+  res.send(`
+    <h2>Shorts 再生</h2>
+    <iframe width="315" height="560"
+      src="https://www.youtube.com/embed/${id}"
+      frameborder="0" allowfullscreen></iframe>
+    <br><br>
+    <a href="/home">ホーム</a>
+  `);
+});
+
+// チャンネル動画一覧
+app.get("/channel", async (req, res) => {
+  const id = req.query.id;
+  if (!id) return res.send("チャンネルIDがありません");
+
+  const url = `https://www.youtube.com/channel/${id}/videos`;
+  const html = await fetch(url).then(r => r.text());
+
+  const matches = [...html.matchAll(/"videoId":"(.*?)".*?"title":\{"runs":
+
+\[\{"text":"(.*?)"\}\]
+
+/gs)];
+
+  const videos = matches.slice(0, 42).map(m => ({
+    id: m[1],
+    title: m[2]
+  }));
+
+  let list = `
+    <h2>チャンネル動画一覧</h2>
+    <div style="
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    ">
+  `;
+
+  list += videos.map(v => `
+    <div>
+      <a href="/watch?v=${v.id}">
+        <img src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" style="width:100%; border-radius:8px;">
+        <div style="margin-top:5px; font-weight:bold;">${v.title}</div>
+      </a>
+    </div>
+  `).join("");
+
+  list += "</div><br><a href='/home'>戻る</a>";
+
+  res.send(list);
+});
+
+app.listen(PORT, () => console.log("Server running"));
