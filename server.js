@@ -41,7 +41,7 @@ app.get("/search", async (req, res) => {
   const q = req.query.q;
   if (!q) return res.send("検索ワードがありません");
 
-  const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+  const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}&gl=JP&hl=ja`;
   const html = await fetch(url).then(r => r.text());
 
   const matches = [...html.matchAll(/"videoId":"(.*?)".*?"title":\{"runs":
