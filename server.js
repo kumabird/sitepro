@@ -1,117 +1,73 @@
 import express from "express";
-const app = express();
-app.disable("x-powered-by");
+import fetch from "node-fetch";
 
+const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.urlencoded({ extended: true }));
+// YouTube 以外禁止
+function isYouTube(url) {
+  return (
+    url.includes("youtube.com") ||
+    url.includes("youtu.be")
+  );
+}
 
-// ホーム（検索フォーム）
+// 同意画面スキップ（地域パラメータ削除）
+function cleanYouTubeURL(url) {
+  if (url.includes("gl=") || url.includes("hl=")) {
+    return "https://www.youtube.com/";
+  }
+  return url;
+}
+
 app.get("/", (req, res) => {
-  res.send(`
-    <h2>YouTube Viewer</h2>
-    <form action="/search">
-      <input type="text" name="q" placeholder="譚ｾ蟾昴?豁ｻ縺ｬ縺ｹ縺阪□" style="width:300px;">
-      <button type="submit">検索</button>
-    </form>
-  `);
+  res.redirect("/proxy?url=https://www.youtube.com");
 });
 
-// 検索結果（ドッキリ版）
-app.get("/search", (req, res) => {
-  const q = req.query.q || "you are like a monkey";
+app.get("/proxy", async (req, res) => {
+  let url = req.query.url;
+  if (!url) return res.send("URL が指定されていません");
 
-  const videos = Array(9).fill({
-    id: "dQw4w9WgXcQ", // ドッキリ用の動画ID
-    title: "松川しばく"
-  });
+  if (!isYouTube(url)) {
+    return res.send("このプロキシでは YouTube のみ利用できます");
+  }
 
-  let list = `
-    <h2>検索結果: ${q}</h2>
-    <p>これは運命です。あなたは猿よりも頭が悪いです。あと猿に失礼です</p>
-    <div style="
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-    ">
-  `;
+  url = cleanYouTubeURL(url);
 
-  list += videos.map(v => `
-    <div>
-      <a href="/watch?v=${v.id}">
-        <img src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" style="width:100%; border-radius:8px;">
-        <div style="margin-top:5px; font-weight:bold;">${v.title}</div>
-      </a>
-    </div>
-  `).join("");
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": req.headers["user-agent"]
+      }
+    });
 
-  list += "</div><br><a href='/'>戻る</a>";
+    const contentType = response.headers.get("content-type");
+    res.set("Content-Type", contentType);
 
-  res.send(list);
+    const body = await response.text();
+
+    // リンク書き換え
+    const rewritten = body
+      .replace(/href="([^"]+)"/g, (m, p1) => {
+        if (p1.startsWith("http")) {
+          return `href="/proxy?url=${encodeURIComponent(p1)}"`;
+        }
+        return m;
+      })
+      .replace(/src="([^"]+)"/g, (m, p1) => {
+        if (p1.startsWith("http")) {
+          return `src="/proxy?url=${encodeURIComponent(p1)}"`;
+        }
+        return m;
+      });
+
+    res.send(rewritten);
+
+  } catch (err) {
+    res.send("読み込みエラー: " + err.message);
+  }
 });
 
-// 動画再生（埋め込み＋ドッキリメッセージ）
-app.get("/watch", (req, res) => {
-  const id = req.query.v;
-  if (!id) return res.send("動画IDがありません");
-
-  res.send(`
-    <h2>動画再生</h2>
-    <p style="color:red; font-weight:bold;">松川が来たらすぐに逃げましょう</p>
-    <iframe width="560" height="315"
-      src="https://www.youtube.com/embed/${id}?autoplay=1"
-      frameborder="0" allowfullscreen></iframe>
-    <br><br>
-    <a href="/">ホーム</a>
-  `);
+app.listen(PORT, () => {
+  console.log("Server running on port " + PORT);
 });
-
-// Shorts 再生（そのまま）
-app.get("/shorts", (req, res) => {
-  const id = req.query.v;
-  if (!id) return res.send("Shorts ID がありません");
-
-  res.send(`
-    <h2>Shorts 再生</h2>
-    <iframe width="315" height="560"
-      src="https://www.youtube.com/embed/${id}"
-      frameborder="0" allowfullscreen></iframe>
-    <br><br>
-    <a href="/">ホーム</a>
-  `);
-});
-
-// チャンネル動画一覧（ドッキリ化）
-app.get("/channel", (req, res) => {
-  const id = req.query.id;
-  if (!id) return res.send("チャンネルIDがありません");
-
-  const videos = Array(9).fill({
-    id: "dQw4w9WgXcQ",
-    title: "Matukawa'hed is lonely"
-  });
-
-  let list = `
-    <h2>チャンネル動画一覧（ID: ${id}）</h2>
-    <div style="
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-    ">
-  `;
-
-  list += videos.map(v => `
-    <div>
-      <a href="/watch?v=${v.id}">
-        <img src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" style="width:100%; border-radius:8px;">
-        <div style="margin-top:5px; font-weight:bold;">${v.title}</div>
-      </a>
-    </div>
-  `).join("");
-
-  list += "</div><br><a href='/'>戻る</a>";
-
-  res.send(list);
-});
-
-app.listen(PORT, () => console.log("こんなところに野生の松川が!"));
