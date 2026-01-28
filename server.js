@@ -35,7 +35,9 @@ app.get("/", (req, res) => {
   `);
 });
 
-// ★ 検索結果（51本表示）→ 10% の確率で wBf47hGMch0 に差し替え
+// ★ 検索結果（51本表示）
+// → 10% の確率で wBf47hGMch0 に差し替え
+// → その場合タイトルは必ず「何やってるんですか勉強してください」
 app.get("/search", (req, res) => {
   const q = req.query.q;
   if (!q) return res.send("検索ワードがありません");
@@ -50,14 +52,17 @@ app.get("/search", (req, res) => {
   `;
 
   list += fixedVideos.map(v => {
-    // ★ 10% の確率で検索結果の動画 ID を差し替え
-    const videoId = Math.random() < 0.1 ? "wBf47hGMch0" : v.id;
+    const isSpecial = Math.random() < 0.1;
+    const videoId = isSpecial ? "wBf47hGMch0" : v.id;
+    const title = isSpecial
+      ? "何やってるんですか勉強してください"
+      : v.title;
 
     return `
       <div>
         <a href="/watch?v=${videoId}">
           <img src="https://i.ytimg.com/vi/${videoId}/hqdefault.jpg" style="width:100%; border-radius:8px;">
-          <div style="margin-top:5px; font-weight:bold;">${v.title}</div>
+          <div style="margin-top:5px; font-weight:bold;">${title}</div>
         </a>
       </div>
     `;
@@ -68,7 +73,7 @@ app.get("/search", (req, res) => {
   res.send(list);
 });
 
-// ★ 動画再生（9本同時）※元のまま
+// ★ 動画再生（9本同時）※元のまま（自動再生なし・muteなし）
 app.get("/watch", (req, res) => {
   const id = req.query.v;
   if (!id) return res.send("動画IDがありません");
