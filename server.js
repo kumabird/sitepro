@@ -7,10 +7,12 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.urlencoded({ extended: true }));
 
-// ★ 51本の固定動画を自動生成（全部同じ動画ID）
-const fixedVideos = Array.from({ length: 51 }, (_, i) => ({
+// ★ 51本の固定動画（タイトルを指定の文章に統一）
+const fixedTitle = "そういう問題ッヒョオッホーーー！！　解決ジダイガダメニ！　俺ハネェ！　ブフッフンハアァア！！　誰がね゛え！　誰が誰に投票ジデモ゛オンナジヤ、オンナジヤ思っでえ！";
+
+const fixedVideos = Array.from({ length: 51 }, () => ({
   id: "NfZsV6z48wE",
-  title: `固定動画 ${i + 1}`
+  title: fixedTitle
 }));
 
 // ホーム（検索フォーム）
