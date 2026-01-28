@@ -63,19 +63,26 @@ app.get("/search", (req, res) => {
   res.send(list);
 });
 
-// ★ 動画再生（9本同時）
+// ★ 動画再生（18本同時 + 10%で別ID）※自動再生なし・muteなし
 app.get("/watch", (req, res) => {
-  const id = req.query.v;
+  let id = req.query.v;
   if (!id) return res.send("動画IDがありません");
 
-  const iframes = Array.from({ length: 9 }, () => `
+  // ★ 10% の確率で wBf47hGMch0 に差し替え
+  if (Math.random() < 0.1) {
+    id = "wBf47hGMch0";
+  }
+
+  // ★ 18本同時再生（autoplay も mute も付けない）
+  const iframes = Array.from({ length: 18 }, () => `
     <iframe width="300" height="170"
       src="https://www.youtube.com/embed/${id}"
-      frameborder="0" allowfullscreen></iframe>
+      frameborder="0" allow="encrypted-media" allowfullscreen>
+    </iframe>
   `).join("");
 
   res.send(`
-    <h2>動画再生（9本同時）</h2>
+    <h2>動画再生（18本同時・自動再生なし・muteなし）</h2>
     <div style="
       display: grid;
       grid-template-columns: repeat(3, 1fr);
