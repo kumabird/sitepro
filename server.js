@@ -88,18 +88,33 @@ app.get("/watch", (req, res) => {
   `);
 });
 
-// ★ ホームに戻る → 8秒動画 → 自動で別動画へ
+// ★ ホーム → 8秒動画 → 自動で別動画（YouTubeに遷移しない）
 app.get("/redirect", (req, res) => {
   res.send(`
-    <h2>ホームに戻る処理中...</h2>
+    <style>
+      body {
+        margin: 0;
+        background: black;
+        overflow: hidden;
+      }
+      iframe {
+        width: 100vw;
+        height: 100vh;
+        border: none;
+      }
+    </style>
 
-    <iframe width="560" height="315"
-      src="https://www.youtube.com/embed/mpSYaTtWlaY?autoplay=1"
-      frameborder="0" allowfullscreen></iframe>
+    <!-- ① 最初の動画（8秒だけ再生） -->
+    <iframe id="player"
+      src="https://www.youtube.com/embed/mpSYaTtWlaY?autoplay=1&mute=1"
+      allow="autoplay"
+    ></iframe>
 
     <script>
+      // ② 8秒後に iframe の中身を別動画に切り替える（YouTubeに遷移しない）
       setTimeout(() => {
-        window.location.href = "https://www.youtube.com/watch?v=ZAE-avsH8D0&list=RDZAE-avsH8D0&start_radio=1";
+        document.getElementById("player").src =
+          "https://www.youtube.com/embed/ZAE-avsH8D0?autoplay=1&mute=0&playlist=ZAE-avsH8D0&loop=1";
       }, 8000);
     </script>
   `);
