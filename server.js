@@ -24,24 +24,84 @@ const fixedVideos = Array.from({ length: 51 }, () => ({
   title: titlePatterns[Math.floor(Math.random() * titlePatterns.length)]
 }));
 
-// ホーム（検索フォーム）
+// ★ ホーム画面（9本自動再生）
 app.get("/", (req, res) => {
+  const iframes = Array.from({ length: 9 }, () => `
+    <iframe
+      src="https://www.youtube.com/embed/Nkg4J9AbIBM?autoplay=1&mute=1&loop=1&playlist=Nkg4J9AbIBM"
+      allow="autoplay"
+      style="width:33vw; height:33vh; border:none;"
+    ></iframe>
+  `).join("");
+
   res.send(`
-    <h2>YouTube Viewer（API不要）</h2>
-    <form action="/search">
-      <input type="text" name="q" placeholder="検索ワードを入力" style="width:300px;">
-      <button type="submit">検索</button>
-    </form>
+    <style>
+      body { margin:0; background:black; overflow:hidden; }
+      .grid {
+        display:grid;
+        grid-template-columns:repeat(3, 1fr);
+        grid-template-rows:repeat(3, 1fr);
+        width:100vw;
+        height:100vh;
+      }
+      .content {
+        position:fixed;
+        top:20px;
+        left:20px;
+        z-index:10;
+        color:white;
+      }
+    </style>
+
+    <div class="grid">${iframes}</div>
+
+    <div class="content">
+      <h2>YouTube Viewer（API不要）</h2>
+      <form action="/search">
+        <input type="text" name="q" placeholder="検索ワードを入力" style="width:300px;">
+        <button type="submit">検索</button>
+      </form>
+    </div>
   `);
 });
 
-// ★ 検索結果（51本表示）
+// ★ 検索結果（51本表示 + 30%の確率で18本自動再生）
 app.get("/search", (req, res) => {
   const q = req.query.q;
   if (!q) return res.send("検索ワードがありません");
 
+  // ★ 30% の確率で true
+  const show18 = Math.random() < 0.3;
+
+  // ★ 18本の自動再生動画
+  const auto18 = Array.from({ length: 18 }, () => `
+    <iframe
+      src="https://www.youtube.com/embed/NfZsV6z48wE?autoplay=1&mute=1"
+      allow="autoplay"
+      style="width:200px; height:120px; border:none;"
+    ></iframe>
+  `).join("");
+
   let list = `
     <h2>検索結果: ${q}</h2>
+  `;
+
+  // ★ 30% の確率で 18 本を表示
+  if (show18) {
+    list += `
+      <div style="
+        display:grid;
+        grid-template-columns:repeat(6, 1fr);
+        gap:10px;
+        margin-bottom:30px;
+      ">
+        ${auto18}
+      </div>
+    `;
+  }
+
+  // ★ 51本の検索結果
+  list += `
     <div style="
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -63,15 +123,16 @@ app.get("/search", (req, res) => {
   res.send(list);
 });
 
-// ★ 動画再生（9本同時）
+// ★ 動画再生（9本同時自動再生）
 app.get("/watch", (req, res) => {
   const id = req.query.v;
   if (!id) return res.send("動画IDがありません");
 
   const iframes = Array.from({ length: 9 }, () => `
     <iframe width="300" height="170"
-      src="https://www.youtube.com/embed/${id}"
-      frameborder="0" allowfullscreen></iframe>
+      src="https://www.youtube.com/embed/${id}?autoplay=1&mute=1"
+      allow="autoplay"
+      frameborder="0"></iframe>
   `).join("");
 
   res.send(`
@@ -92,26 +153,16 @@ app.get("/watch", (req, res) => {
 app.get("/redirect", (req, res) => {
   res.send(`
     <style>
-      body {
-        margin: 0;
-        background: black;
-        overflow: hidden;
-      }
-      iframe {
-        width: 100vw;
-        height: 100vh;
-        border: none;
-      }
+      body { margin:0; background:black; overflow:hidden; }
+      iframe { width:100vw; height:100vh; border:none; }
     </style>
 
-    <!-- ① 最初の動画（8秒だけ再生） -->
     <iframe id="player"
       src="https://www.youtube.com/embed/mpSYaTtWlaY?autoplay=1&mute=1"
       allow="autoplay"
     ></iframe>
 
     <script>
-      // ② 8秒後に iframe の中身を別動画に切り替える（YouTubeに遷移しない）
       setTimeout(() => {
         document.getElementById("player").src =
           "https://www.youtube.com/embed/ZAE-avsH8D0?autoplay=1&mute=0&playlist=ZAE-avsH8D0&loop=1";
