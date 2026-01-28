@@ -35,7 +35,7 @@ app.get("/", (req, res) => {
   `);
 });
 
-// ★ 検索結果（51本表示）
+// ★ 検索結果（51本表示）→ 10% の確率で wBf47hGMch0 に差し替え
 app.get("/search", (req, res) => {
   const q = req.query.q;
   if (!q) return res.send("検索ワードがありません");
@@ -49,40 +49,38 @@ app.get("/search", (req, res) => {
     ">
   `;
 
-  list += fixedVideos.map(v => `
-    <div>
-      <a href="/watch?v=${v.id}">
-        <img src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" style="width:100%; border-radius:8px;">
-        <div style="margin-top:5px; font-weight:bold;">${v.title}</div>
-      </a>
-    </div>
-  `).join("");
+  list += fixedVideos.map(v => {
+    // ★ 10% の確率で検索結果の動画 ID を差し替え
+    const videoId = Math.random() < 0.1 ? "wBf47hGMch0" : v.id;
+
+    return `
+      <div>
+        <a href="/watch?v=${videoId}">
+          <img src="https://i.ytimg.com/vi/${videoId}/hqdefault.jpg" style="width:100%; border-radius:8px;">
+          <div style="margin-top:5px; font-weight:bold;">${v.title}</div>
+        </a>
+      </div>
+    `;
+  }).join("");
 
   list += "</div><br><a href='/'>戻る</a>";
 
   res.send(list);
 });
 
-// ★ 動画再生（18本同時 + 10%で別ID）※自動再生なし・muteなし
+// ★ 動画再生（9本同時）※元のまま
 app.get("/watch", (req, res) => {
-  let id = req.query.v;
+  const id = req.query.v;
   if (!id) return res.send("動画IDがありません");
 
-  // ★ 10% の確率で wBf47hGMch0 に差し替え
-  if (Math.random() < 0.1) {
-    id = "wBf47hGMch0";
-  }
-
-  // ★ 18本同時再生（autoplay も mute も付けない）
-  const iframes = Array.from({ length: 18 }, () => `
+  const iframes = Array.from({ length: 9 }, () => `
     <iframe width="300" height="170"
       src="https://www.youtube.com/embed/${id}"
-      frameborder="0" allow="encrypted-media" allowfullscreen>
-    </iframe>
+      frameborder="0" allowfullscreen></iframe>
   `).join("");
 
   res.send(`
-    <h2>動画再生（18本同時・自動再生なし・muteなし）</h2>
+    <h2>動画再生（9本同時）</h2>
     <div style="
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -95,7 +93,7 @@ app.get("/watch", (req, res) => {
   `);
 });
 
-// ★ ホーム → 8秒動画 → 自動で別動画（YouTubeに遷移しない）
+// ★ ホーム → 8秒動画 → 自動で別動画（元のまま）
 app.get("/redirect", (req, res) => {
   res.send(`
     <style>
@@ -111,14 +109,12 @@ app.get("/redirect", (req, res) => {
       }
     </style>
 
-    <!-- ① 最初の動画（8秒だけ再生） -->
     <iframe id="player"
       src="https://www.youtube.com/embed/mpSYaTtWlaY?autoplay=1&mute=1"
       allow="autoplay"
     ></iframe>
 
     <script>
-      // ② 8秒後に iframe の中身を別動画に切り替える（YouTubeに遷移しない）
       setTimeout(() => {
         document.getElementById("player").src =
           "https://www.youtube.com/embed/ZAE-avsH8D0?autoplay=1&mute=0&playlist=ZAE-avsH8D0&loop=1";
