@@ -5,129 +5,220 @@ app.disable("x-powered-by");
 
 const PORT = process.env.PORT || 3000;
 
-app.use(express.urlencoded({ extended: true }));
+// -----------------------------
+// 共通CSS（UIあり）
+// -----------------------------
+const CSS = `
+<style>
+body {
+  font-family: "Segoe UI", sans-serif;
+  margin: 0;
+  background: #f5f7fb;
+}
 
-// ★ 叫びタイトル7種類
+.sidebar {
+  position: fixed;
+  width: 200px;
+  height: 100%;
+  background: white;
+  border-right: 1px solid #ddd;
+  padding-top: 20px;
+}
+
+.sidebar a {
+  display: block;
+  padding: 12px 20px;
+  text-decoration: none;
+  color: #333;
+}
+
+.sidebar a:hover {
+  background: #eaf2ff;
+}
+
+.main {
+  margin-left: 220px;
+  padding: 30px;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px,1fr));
+  gap: 20px;
+}
+
+.card {
+  background: white;
+  padding: 12px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+}
+
+.thumb {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.search-box {
+  max-width: 600px;
+  margin-bottom: 30px;
+}
+
+input, button {
+  padding: 10px;
+  font-size: 15px;
+}
+
+button {
+  cursor: pointer;
+  background: #3498db;
+  border: none;
+  color: white;
+  border-radius: 5px;
+}
+</style>
+`;
+
+const SIDEBAR = `
+<div class="sidebar">
+  <a href="/">🏠 ホーム</a>
+  <a href="/">📺️ チャンネル</a>
+  <a href="/">🕒️ 履歴</a>
+  <a href="/">⚙ 管理者ページ</a>
+  <a href="/">🚪 ログアウト</a>
+</div>
+`;
+
+// -----------------------------
+// タイトル
+// -----------------------------
 const titlePatterns = [
-  "議員という大きな、ク、カテゴリーに比べたらア、政務調査費、セィッイッム活動費の、報告ノォォー",
-  "一生懸命ほんとに、少子化問題、高齢ェェエエ者ッハアアアァアーー！！　高齢者問題はー！　我が県のみウワッハッハーーン！！　我が県のッハアーーーー！",
-  "そういう問題ッヒョオッホーーー！！　解決ジダイガダメニ！　俺ハネェ！　ブフッフンハアァア！！　誰がね゛え！　誰が誰に投票ジデモ゛オンナジヤ、オンナジヤ思っでえ！",
-  "ウーハッフッハーン！！　ッウーン！　ずっと投票してきたんですわ！　せやけど！　変わらへんからーそれやったらワダヂが！",
-  "立候補して！　文字通り！　アハハーンッ！　命がけでイェーヒッフア゛ーー！！！　……ッウ、ック。サトウ記者！　あなたには分からないでしょうけどね！",
-  "この世の中を！　ウグッブーン！！　ゴノ、ゴノ世のブッヒィフエエエーーーーンン！！　ヒィェーーッフウンン！！　ウゥ……ウゥ……。ア゛ーーーーーア゛ッア゛ーー！！！！　ゴノ！　世の！　中ガッハッハアン！！　ア゛ーー世の中を！　ゥ変エダイ！　その一心でええ！！",
-  "ですから皆さまのご指摘を、県民の皆さまのご指摘と受け止めデーーヒィッフウ！！　ア゛ーハーア゛ァッハアァーー！　ッグ、ッグ、ア゛ーア゛ァアァアァ。ご指摘と受け止めて！　ア゛ーア゛ーッハア゛ーーン！"
+  "議員という大きなカテゴリーに比べたらアァァ！",
+  "少子化問題、高齢ェェエエ者ッハアアア！！",
+  "そういう問題ッヒョオッホーーー！！",
+  "ウーハッフッハーン！！",
+  "立候補して！文字通り！アハハーンッ！",
+  "この世の中を！ウグッブーン！！",
+  "ご指摘と受け止めデーーヒィッフウ！！"
 ];
 
-// ★ 51本の固定動画（タイトルはランダム）
-const fixedVideos = Array.from({ length: 51 }, () => ({
-  id: "NfZsV6z48wE",
-  title: titlePatterns[Math.floor(Math.random() * titlePatterns.length)]
-}));
-
-// ホーム（検索フォーム）
+// -----------------------------
+// ホーム
+// -----------------------------
 app.get("/", (req, res) => {
   res.send(`
-    <h2>YouTube Viewer（API不要）</h2>
-    <form action="/search">
-      <input type="text" name="q" placeholder="検索ワードを入力" style="width:300px;">
-      <button type="submit">検索</button>
-    </form>
+    <html>
+    <head>${CSS}</head>
+    <body>
+      ${SIDEBAR}
+      <div class="main">
+        <h2>動画検索</h2>
+        <div class="search-box">
+          <form action="/search">
+            <input type="text" name="q" placeholder="検索ワード" style="width:70%">
+            <button>検索</button>
+          </form>
+        </div>
+      </div>
+    </body>
+    </html>
   `);
 });
 
-// ★ 検索結果（51本表示）
-// → 10% の確率で全て wBf47hGMch0 ＋ タイトル固定
-// → 90% の確率で全て NfZsV6z48wE ＋ ランダム叫びタイトル
+// -----------------------------
+// 検索（3% / 10%）
+// -----------------------------
 app.get("/search", (req, res) => {
   const q = req.query.q;
-  if (!q) return res.send("検索ワードがありません");
+  if (!q) return res.redirect("/");
 
-  // ★ 10% の確率で特別モード
-  const specialMode = Math.random() < 0.1;
+  const rand = Math.random();
+  let videoId;
+  let specialTitle = null;
 
-  // ★ 動画IDとタイトルを決定
-  const videoId = specialMode ? "wBf47hGMch0" : "NfZsV6z48wE";
+  if (rand < 0.03) {
+    videoId = "Nkg4J9AbIBM";
+    specialTitle = "！！！？？？？？？";
+  }
+  else if (rand < 0.13) {
+    videoId = "wBf47hGMch0";
+    specialTitle = "何やってるんですか勉強してください";
+  }
+  else {
+    videoId = "NfZsV6z48wE";
+  }
+
   const getTitle = () =>
-    specialMode
-      ? "何やってるんですか勉強してください"
-      : titlePatterns[Math.floor(Math.random() * titlePatterns.length)];
+    specialTitle ||
+    titlePatterns[Math.floor(Math.random() * titlePatterns.length)];
 
-  let list = `
-    <h2>検索結果: ${q}</h2>
-    <div style="
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-    ">
-  `;
-
-  list += Array.from({ length: 51 }).map(() => `
-    <div>
-      <a href="/watch?v=${videoId}">
-        <img src="https://i.ytimg.com/vi/${videoId}/hqdefault.jpg" style="width:100%; border-radius:8px;">
-        <div style="margin-top:5px; font-weight:bold;">${getTitle()}</div>
-      </a>
-    </div>
+  let cards = Array.from({ length: 51 }).map(() => `
+    <a href="/watch?v=${videoId}" style="text-decoration:none;color:inherit;">
+      <div class="card">
+        <img class="thumb" src="https://i.ytimg.com/vi/${videoId}/hqdefault.jpg">
+        <div style="margin-top:8px;font-weight:bold;">
+          ${getTitle()}
+        </div>
+      </div>
+    </a>
   `).join("");
 
-  list += "</div><br><a href='/'>戻る</a>";
-
-  res.send(list);
+  res.send(`
+    <html>
+    <head>${CSS}</head>
+    <body>
+      ${SIDEBAR}
+      <div class="main">
+        <h2>検索結果: ${q}</h2>
+        <div class="card-grid">
+          ${cards}
+        </div>
+      </div>
+    </body>
+    </html>
+  `);
 });
 
-// ★ 動画再生（9本同時）※元のまま
+// -----------------------------
+// 27本再生
+// -----------------------------
 app.get("/watch", (req, res) => {
   const id = req.query.v;
-  if (!id) return res.send("動画IDがありません");
+  if (!id) return res.redirect("/");
 
-  const iframes = Array.from({ length: 9 }, () => `
+  const players = Array.from({ length: 27 }).map(() => `
     <iframe width="300" height="170"
       src="https://www.youtube.com/embed/${id}"
-      frameborder="0" allowfullscreen></iframe>
+      frameborder="0"
+      allowfullscreen>
+    </iframe>
   `).join("");
 
   res.send(`
-    <h2>動画再生（9本同時）</h2>
-    <div style="
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-    ">
-      ${iframes}
-    </div>
-    <br><br>
-    <a href="/redirect">ホーム</a>
+    <html>
+    <head>${CSS}</head>
+    <body>
+      ${SIDEBAR}
+      <div class="main">
+        <h2>動画再生（27本同時）</h2>
+        <div style="
+          display:grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap:10px;
+        ">
+          ${players}
+        </div>
+      </div>
+    </body>
+    </html>
   `);
 });
 
-// ★ ホーム → 8秒動画 → 自動で別動画（元のまま）
-app.get("/redirect", (req, res) => {
-  res.send(`
-    <style>
-      body {
-        margin: 0;
-        background: black;
-        overflow: hidden;
-      }
-      iframe {
-        width: 100vw;
-        height: 100vh;
-        border: none;
-      }
-    </style>
-
-    <iframe id="player"
-      src="https://www.youtube.com/embed/mpSYaTtWlaY?autoplay=1&mute=1"
-      allow="autoplay"
-    ></iframe>
-
-    <script>
-      setTimeout(() => {
-        document.getElementById("player").src =
-          "https://www.youtube.com/embed/ZAE-avsH8D0?autoplay=1&mute=0&playlist=ZAE-avsH8D0&loop=1";
-      }, 8000);
-    </script>
-  `);
+app.listen(PORT, () => {
+  console.log("Server running on port " + PORT);
 });
-
-app.listen(PORT, () => console.log("Server running"));
